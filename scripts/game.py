@@ -1,6 +1,7 @@
 from vision import Vision
 import time
 import tkinter as tk
+
 class Game():
     def __init__(self) -> None:
         self.delay = 1
