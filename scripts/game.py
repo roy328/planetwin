@@ -36,6 +36,7 @@ class Game():
 
     def run(self) -> None:
         print("running....", self.username)
+        time.sleep(2)
         while True:
             new_hand = self.vns.cards()
             time.sleep(self.delay)
