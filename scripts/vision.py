@@ -3,10 +3,12 @@ import cv2
 import numpy as np
 
 class Vision():
-    def __init__(self):
+    def __init__(self, username):
         self.threshold = 0.65
+        self.username = username
 
     def cards(self):
+        print("cards .... ", self.username)
         gray_card = self.screen_shot()
 
     def screen_shot(self, gray_convert: bool = False):

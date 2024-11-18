@@ -6,20 +6,21 @@ class Game():
         self.delay = 1
         self.hand = []
         self.username = ''
-        self.vns = Vision()
+        self.vns = None
         self.entry = None
 
-    def accept_input(self):
+    def accept_input(self) -> None:
         self.username = self.entry.get()
+        self.vns = Vision(self.username)
         root.destroy()
 
-    def input_username(self):
+    def input_username(self) -> None:
         global root
         root = tk.Tk()
         root.title("Input Prompt")
 
         # Create a label
-        label = tk.Label(root, text="Enter a value:")
+        label = tk.Label(root, text="Enter your username")
         label.pack(pady=10)
 
         # Create an entry widget for user input
@@ -35,10 +36,9 @@ class Game():
 
     def run(self) -> None:
         print("running....", self.username)
-        time.sleep(2)
         while True:
-
             new_hand = self.vns.cards()
+            time.sleep(self.delay)
             break
             
 if __name__ == "__main__":
