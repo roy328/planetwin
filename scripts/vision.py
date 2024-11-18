@@ -11,13 +11,7 @@ class Vision():
         self.username = username
         self.screen = None
         self.board_area = None
-        self.players = []
-        self.player1 = None
-        self.player2 = None
-        self.player3 = None
-        self.player4 = None
-        self.player5 = None
-        self.player6 = None
+        self.players_quad = []
         self.me = None
 
     def cards(self):
@@ -41,10 +35,13 @@ class Vision():
     
     def find_longest_string(self, extracted_text: str) -> str:
         longest_string = ""
+        current_money = ""
     
         # Split the text into lines and check each line
         for line in extracted_text.splitlines():
             # Split the line into substrings by space and find the longest one
+            if "€" in line:
+                current_money = line
             substrings = line.split()
             if substrings:  # Check if there are any substrings
                 current_longest = max(substrings, key=len)
@@ -52,10 +49,10 @@ class Vision():
                 if len(current_longest) > len(longest_string):
                     longest_string = current_longest
 
-        return longest_string
+        return longest_string, current_money
 
     def get_player_info(self):
-        for i, quad in enumerate(self.players):
+        for i, quad in enumerate(self.players_quad):
             text = self.extract_text_from_image(quad)
             print(f"Text from Quadrant {i + 1}\n")
             filtered_text = self.filter_extracted_text(text)
@@ -71,9 +68,9 @@ class Vision():
             else:
                 print(f"No matches found in Quadrant {i + 1}.")
 
-            longest_string = self.find_longest_string(text)
+            longest_string, current_money = self.find_longest_string(text)
             if longest_string:
-                print(f"Longest String from Quadrant {i + 1}: {longest_string}")
+                print(f"Longest String from Quadrant {i + 1}: {longest_string} {current_money}")
 
     def read_all_player(self) -> None:
         height, width = self.board_area.shape[:2]
@@ -83,24 +80,24 @@ class Vision():
         third_width = width // 3
 
         # Split the image into four quadrants
-        self.player1 = self.board_area[third_height * 2:height, third_width:third_width * 2]  # Top-Right
-        self.players.append(self.player1)
-        cv2.imwrite('screenshots/player1.png', self.player1)
-        self.player2 = self.board_area[third_height * 2:height, third_width * 2:width]  # Top-Right
-        self.players.append(self.player2)
-        cv2.imwrite('screenshots/player2.png', self.player2)
-        self.player3 = self.board_area[0:third_height, third_width * 2:width] # Bottom-Left
-        self.players.append(self.player3)
-        cv2.imwrite('screenshots/player3.png', self.player3)
-        self.player4 = self.board_area[0:third_height, third_width:third_width * 2] # Bottom-Right
-        self.players.append(self.player4)
-        cv2.imwrite('screenshots/player4.png', self.player4)
-        self.player5 = self.board_area[0:third_height, 0:third_width] # Bottom-Right
-        self.players.append(self.player5)
-        cv2.imwrite('screenshots/player5.png', self.player5)
-        self.player6 = self.board_area[third_height * 2:height, 0:third_width]      # Top-Left
-        self.players.append(self.player6)
-        cv2.imwrite('screenshots/player6.png', self.player6)
+        self.player = self.board_area[third_height * 2:height, third_width:third_width * 2]  # Top-Right
+        self.players_quad.append(self.player)
+        cv2.imwrite('screenshots/player1.png', self.player)
+        self.player = self.board_area[third_height * 2:height, third_width * 2:width]  # Top-Right
+        self.players_quad.append(self.player)
+        cv2.imwrite('screenshots/player2.png', self.player)
+        self.player = self.board_area[0:third_height, third_width * 2:width] # Bottom-Left
+        self.players_quad.append(self.player)
+        cv2.imwrite('screenshots/player3.png', self.player)
+        self.player = self.board_area[0:third_height, third_width:third_width * 2] # Bottom-Right
+        self.players_quad.append(self.player)
+        cv2.imwrite('screenshots/player4.png', self.player)
+        self.player = self.board_area[0:third_height, 0:third_width] # Bottom-Right
+        self.players_quad.append(self.player)
+        cv2.imwrite('screenshots/player5.png', self.player)
+        self.player = self.board_area[third_height * 2:height, 0:third_width]      # Top-Left
+        self.players_quad.append(self.player)
+        cv2.imwrite('screenshots/player6.png', self.player)
 
     def crop_board_area(self):
         if self.screen is None:
