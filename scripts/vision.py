@@ -2,6 +2,7 @@ import pyautogui
 import cv2
 import numpy as np
 import pytesseract
+import re
 from config import (BOARD_LOWER_COLOR, BOARD_HIGHER_COLOR)
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -9,70 +10,47 @@ class Vision():
     def __init__(self, username):
         self.threshold = 0.65
         self.username = username
+        self.current_money = ""
         self.screen = None
         self.board_area = None
-        self.players_quad = []
-        self.me = None
+        self.me = dict()
 
     def cards(self):
-        print("cards .... ", self.username)
+        # print("cards .... ", self.username)
         self.screen_shot()
         self.crop_board_area()
         self.read_all_player()
-        self.get_player_info()
 
-    def extract_text_from_image(self, image: np.ndarray) -> str:
+    def extract_text_from_image(self, image: np.ndarray, num) -> str:
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite(f'screenshots/player{num + 6}.png', gray_image)
         text = pytesseract.image_to_string(gray_image)    
         return text.strip()
 
     def filter_extracted_text(self, extracted_text: str,  currency = "€") -> list:
-        # Split the text into lines or words based on spaces/newlines
-        lines = extracted_text.splitlines()
-        filtered_texts = [line for line in lines if "nino922" in line]
-        # print("filtered text", filtered_texts)
-        return filtered_texts
+        if self.username in extracted_text:
+            return self.username
+        else:
+            return ""
     
-    def find_longest_string(self, extracted_text: str) -> str:
-        longest_string = ""
-        current_money = ""
-    
-        # Split the text into lines and check each line
-        for line in extracted_text.splitlines():
-            # Split the line into substrings by space and find the longest one
-            if "€" in line:
-                current_money = line
-            substrings = line.split()
-            if substrings:  # Check if there are any substrings
-                current_longest = max(substrings, key=len)
-                # Update longest_string if the current is longer
-                if len(current_longest) > len(longest_string):
-                    longest_string = current_longest
+    def get_player_info(self, player, num) -> bool:
+        text = self.extract_text_from_image(player, num)
+        # print(f"Text from Quadrant {num}\n{text}\n")
+        filtered_text = self.filter_extracted_text(text)
 
-        return longest_string, current_money
-
-    def get_player_info(self):
-        for i, quad in enumerate(self.players_quad):
-            text = self.extract_text_from_image(quad)
-            print(f"Text from Quadrant {i + 1}\n")
-            filtered_text = self.filter_extracted_text(text)
-            if not text or text == "VUOTO":
-                # empty_array.append(f"Quadrant {i + 1}: Text is empty or 'VUOTO'")
-                print(f"Appended to empty_array: Quadrant {i + 1} is empty or 'VUOTO'.")
-                continue
-
-            if filtered_text:
-                print(f"Filtered Text from Quadrant {i + 1} containing {self.username} and '$':")
-                for line in filtered_text:
-                    print(line)
-            else:
-                print(f"No matches found in Quadrant {i + 1}.")
-
-            longest_string, current_money = self.find_longest_string(text)
-            if longest_string:
-                print(f"Longest String from Quadrant {i + 1}: {longest_string} {current_money}")
+        if filtered_text == self.username:
+            for line in text.splitlines():
+                match = re.findall(r'\S*€\S*', line)
+                if match !=  [] and match is not None:
+                    self.current_money = match[0]
+            print(f"you are sitten at {num}th seat. {self.username}\nAnd your remaining money is {self.current_money}")
+            return True
+        # print(f"No matches found in {num}th seat.")
+        return False
 
     def read_all_player(self) -> None:
+        if self.board_area is None:
+            return
         height, width = self.board_area.shape[:2]
         
         # Calculate the mid points
@@ -80,24 +58,36 @@ class Vision():
         third_width = width // 3
 
         # Split the image into four quadrants
-        self.player = self.board_area[third_height * 2:height, third_width:third_width * 2]  # Top-Right
-        self.players_quad.append(self.player)
-        cv2.imwrite('screenshots/player1.png', self.player)
-        self.player = self.board_area[third_height * 2:height, third_width * 2:width]  # Top-Right
-        self.players_quad.append(self.player)
-        cv2.imwrite('screenshots/player2.png', self.player)
-        self.player = self.board_area[0:third_height, third_width * 2:width] # Bottom-Left
-        self.players_quad.append(self.player)
-        cv2.imwrite('screenshots/player3.png', self.player)
-        self.player = self.board_area[0:third_height, third_width:third_width * 2] # Bottom-Right
-        self.players_quad.append(self.player)
-        cv2.imwrite('screenshots/player4.png', self.player)
-        self.player = self.board_area[0:third_height, 0:third_width] # Bottom-Right
-        self.players_quad.append(self.player)
-        cv2.imwrite('screenshots/player5.png', self.player)
-        self.player = self.board_area[third_height * 2:height, 0:third_width]      # Top-Left
-        self.players_quad.append(self.player)
-        cv2.imwrite('screenshots/player6.png', self.player)
+        player = self.board_area[third_height * 2 + 50:height - 10, third_width + 20:third_width * 2 - 20]  # Top-Right
+        found_me = self.get_player_info(player, 1)
+        cv2.imwrite('screenshots/player1.png', player)
+        if found_me: 
+            return
+        player = self.board_area[third_height * 2 + 25:height - 35, third_width * 2 + 60:width + 20]  # Top-Right
+        found_me = self.get_player_info(player, 2)
+        cv2.imwrite('screenshots/player2.png', player)
+        if found_me: 
+            return
+        player = self.board_area[15:third_height -45, third_width * 2 + 20:width - 20] # Bottom-Left
+        found_me = self.get_player_info(player, 3)
+        cv2.imwrite('screenshots/player3.png', player)
+        if found_me: 
+            return
+        player = self.board_area[0:third_height - 60, third_width + 20:third_width * 2 - 20] # Bottom-Right
+        found_me = self.get_player_info(player, 4)
+        cv2.imwrite('screenshots/player4.png', player)
+        if found_me: 
+            return
+        player = self.board_area[25:third_height - 35, 20:third_width - 20] # Bottom-Right
+        found_me = self.get_player_info(player, 5)
+        cv2.imwrite('screenshots/player5.png', player)
+        if found_me: 
+            return
+        player = self.board_area[third_height * 2 + 25:height -35, 20:third_width - 20]      # Top-Left
+        found_me = self.get_player_info(player, 6)
+        cv2.imwrite('screenshots/player6.png', player)
+        if not found_me: 
+            print("You are not sitten this table")
 
     def crop_board_area(self):
         if self.screen is None:
@@ -129,7 +119,7 @@ class Vision():
         cv2.imwrite('screenshots/screenshot4.png', self.board_area)
 
     def screen_shot(self, gray_convert: bool = True):
-        print("take screen shot..")
+        # print("take screen shot..")
         screenshot = pyautogui.screenshot()
         screenshot.save("screenshots/screenshot1.png")
         self.screen = np.array(screenshot)
@@ -137,5 +127,4 @@ class Vision():
         if not gray_convert:
             self.screen = cv2.cvtColor(self.screen, cv2.COLOR_RGB2GRAY)
             cv2.imwrite('screenshots/screenshot3.png', self.screen)
-
 
