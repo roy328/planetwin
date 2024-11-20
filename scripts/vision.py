@@ -34,8 +34,10 @@ class Vision():
             return ""
     
     def get_player_info(self, player, num) -> bool:
-        text = self.extract_text_from_image(player, num)
-        # print(f"Text from Quadrant {num}\n{text}\n")
+        card_height, card_width = player.shape[:2]
+        text = self.extract_text_from_image(player[:, 0:int(card_width*0.55)], num)
+        # text = self.extract_text_from_image(player[:, 0:int(card_width*0.6)], num)
+        print(f"Text from Quadrant {num}\n{text}\n")
         filtered_text = self.filter_extracted_text(text)
 
         if filtered_text == self.username:
@@ -47,6 +49,15 @@ class Vision():
             return True
         # print(f"No matches found in {num}th seat.")
         return False
+    
+    def get_my_card(self, card) -> None:
+        cv2.imwrite('screenshots/card1.png', card)
+        height, width = card.shape[:2]
+        text = self.extract_text_from_image(card[3:40, 0:int(width*0.35)], 7)
+        print("first card", text)
+        text = self.extract_text_from_image(card[12:45, int(width*0.3):int(width*0.6)], 8)
+        print("second card", text)
+
 
     def read_all_player(self) -> None:
         if self.board_area is None:
@@ -62,8 +73,10 @@ class Vision():
         found_me = self.get_player_info(player, 1)
         cv2.imwrite('screenshots/player1.png', player)
         if found_me: 
+            card_height, card_width = player.shape[:2]
+            self.get_my_card(player[:, int(card_width*0.55):card_width])
             return
-        player = self.board_area[third_height * 2 + 25:height - 35, third_width * 2 + 60:width + 20]  # Top-Right
+        player = self.board_area[third_height * 2 + 25:height - 35, third_width * 2 + 60:width]  # Top-Right
         found_me = self.get_player_info(player, 2)
         cv2.imwrite('screenshots/player2.png', player)
         if found_me: 
@@ -83,7 +96,7 @@ class Vision():
         cv2.imwrite('screenshots/player5.png', player)
         if found_me: 
             return
-        player = self.board_area[third_height * 2 + 25:height -35, 20:third_width - 20]      # Top-Left
+        player = self.board_area[third_height * 2 + 25:height -35, 0:third_width - 70]      # Top-Left
         found_me = self.get_player_info(player, 6)
         cv2.imwrite('screenshots/player6.png', player)
         if not found_me: 
@@ -102,7 +115,7 @@ class Vision():
         mask = cv2.inRange(img_rgb, lower_bound, upper_bound)
 
         # Zero out mask pixels to the left of start_x
-        mask[:, :200] = 0
+        mask[:200, :] = 0
 
         # Find contours in the masked image
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
